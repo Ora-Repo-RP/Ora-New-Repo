@@ -1,15 +1,21 @@
-FROM nikolaik/python-nodejs:python3.10-nodejs20
+# ---- Base image (Python 3.13 slim) ----
+FROM python:3.13-slim
 
-RUN curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz \
-    -o ffmpeg.tar.xz && \
-    tar -xJf ffmpeg.tar.xz && \
-    mv ffmpeg-*-static/ffmpeg /usr/local/bin/ && \
-    mv ffmpeg-*-static/ffprobe /usr/local/bin/ && \
-    rm -rf ffmpeg*
+# ---- Set working directory ----
+WORKDIR /app
 
-COPY . /app/
-WORKDIR /app/
+# ---- Copy all project files ----
+COPY . /app
 
-RUN pip3 install --no-cache-dir -r requirements.txt
+# ---- Install system dependencies ----
+RUN apt-get update && apt-get install -y \
+    git curl ffmpeg build-essential \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && echo "Node: $(node -v) | npm: $(npm -v)" \
+    && pip install --upgrade pip setuptools wheel \
+    && pip install --no-cache-dir -r requirements.txt \
+    && rm -rf /var/lib/apt/lists/*
 
-CMD ["bash", "start"]
+# ---- Default command ----
+CMD ["python", "run.py"]
